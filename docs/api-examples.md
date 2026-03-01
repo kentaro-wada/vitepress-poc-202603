@@ -2,7 +2,7 @@
 outline: deep
 ---
 
-# Runtime API Examples
+# Runtime API Examples(v1.1.0)
 
 This page demonstrates usage of some of the runtime APIs provided by VitePress.
 
