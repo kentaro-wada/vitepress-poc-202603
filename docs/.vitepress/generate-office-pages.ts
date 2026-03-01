@@ -8,7 +8,7 @@ const DOCS_ROOT = path.resolve(__dirname, '..')
 const OFFICE_EXTS = ['.xlsx', '.docx', '.pptx', '.xls', '.doc', '.ppt']
 
 // GitHub上のベースURLを設定
-const GITHUB_BASE = 'https://github.com/your-org/your-repo/blob/main/docs'
+const GITHUB_BASE = 'https://github.com/kentaro-wada/vitepress-poc-202603/blob/main/docs'
 
 // 生成されたMarkdownファイルのパスを格納する配列
 const GENERATED: string[] = []
