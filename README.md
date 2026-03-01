@@ -13,7 +13,7 @@ https://your-org.github.io/your-repo/
     └── v1.1.0/     ← バージョンブランチのドキュメント
 ```
 
-ブランチをプッシュするたびに対応するディレクトリへ自動デプロイされ、他バージョンのディレクトリには影響しません。
+ブランチをプッシュするたびに対応するディレクトリへ自動デプロイされ、他バージョンのディレクトリには影響しません。一度デプロイされたディレクトリは削除されないため、過去のバージョンのドキュメントも保持され続けます。
 
 ---
 
@@ -23,11 +23,12 @@ https://your-org.github.io/your-repo/
 your-repo/
 ├── docs/
 │   └── .vitepress/
-│       └── config.ts
+│       ├── config.ts
+│       ├── sidebar.ts
+│       └── generate-office-pages.ts
 └── .github/
     └── workflows/
-        ├── deploy-docs.yml          # デプロイワークフロー
-        └── delete-docs-version.yml  # バージョン削除ワークフロー
+        └── deploy-docs.yml          # デプロイワークフロー
 ```
 
 ### docs/.vitepress/config.ts
@@ -36,16 +37,21 @@ your-repo/
 import { defineConfig } from 'vitepress'
 
 const version = process.env.DOCS_VERSION ?? 'main'
+const navVersions = ['main', 'v1.1.0'] // 必要なバージョンをここに列挙
+
+const isBuild = process.env.NODE_ENV === 'production'; // 環境変数でビルドかどうかを判定
+
+const generatedFiles = isBuild ? generateOfficePages() : []; // ビルド時のみ一時ファイルを生成
 
 export default defineConfig({
   base: `/your-repo/docs/${version}/`,
   title: `MyDocs (${version})`,
   themeConfig: {
-    nav: [
-      { text: 'main',   link: 'https://your-org.github.io/your-repo/docs/main/' },
-      { text: 'v1.1.0', link: 'https://your-org.github.io/your-repo/docs/v1.1.0/' },
-    ]
-  }
+    nav: navVersions.map(v => ({ text: v, link: `https://your-org.github.io/your-repo/docs/${v}/` }))
+  },
+  buildEnd() {
+    cleanupOfficePages(generatedFiles)
+  },
 })
 ```
 
@@ -97,45 +103,6 @@ jobs:
           keep_files: true  # 他バージョンのディレクトリを保持する
 ```
 
-### .github/workflows/delete-docs-version.yml
-
-```yaml
-name: Delete Docs Version
-
-on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: '削除するバージョン (例: v1.1.0)'
-        required: true
-        type: string
-
-jobs:
-  delete:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-
-      - name: Delete version directory
-        run: |
-          TARGET="docs/${{ github.event.inputs.version }}"
-          if [ -d "$TARGET" ]; then
-            git rm -rf "$TARGET"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -m "docs: remove ${{ github.event.inputs.version }}"
-            git push
-          else
-            echo "::error::ディレクトリ '$TARGET' が存在しません"
-            exit 1
-          fi
-```
-
 ---
 
 ## 運用手順
@@ -144,7 +111,7 @@ jobs:
 
 **1. ワークフローファイルを配置してmainにプッシュする**
 
-上記3ファイルをリポジトリに追加してプッシュします。プッシュと同時にワークフローが発火し、`docs/main/` へのデプロイが完了します。
+上記2ファイルをリポジトリに追加してプッシュします。プッシュと同時にワークフローが発火し、`docs/main/` へのデプロイが完了します。
 
 **2. GitHub PagesのSourceを設定する**
 
@@ -187,13 +154,10 @@ git push origin v1.1.0
 
 **2. config.ts のナビゲーションに新バージョンを追記する**
 
-`docs/.vitepress/config.ts` の `nav` に追記します。
+`docs/.vitepress/config.ts` の `navVersions` に新バージョンを追加します。
 
 ```ts
-nav: [
-  { text: 'main',   link: '...docs/main/' },
-  { text: 'v1.1.0', link: '...docs/v1.1.0/' },  // 追加
-]
+const navVersions = ['main', 'v1.1.0', 'v1.2.0'] // 新バージョンを追加
 ```
 
 この変更を **mainブランチとバージョンブランチの両方** にコミットします。
@@ -202,38 +166,11 @@ nav: [
 # mainブランチに反映
 git checkout main
 git add docs/.vitepress/config.ts
-git commit -m "docs: add v1.1.0 to nav"
+git commit -m "docs: add v1.2.0 to nav"
 git push origin main
 
 # バージョンブランチにも反映
-git checkout v1.1.0
+git checkout v1.2.0
 git merge main  # または cherry-pick
-git push origin v1.1.0
+git push origin v1.2.0
 ```
-
----
-
-### 不要なバージョンを削除するとき
-
-**1. GitHub ActionsのUIから削除ワークフローを実行する**
-
-Actions → **Delete Docs Version** → **Run workflow** を開き、削除するバージョン名（例: `v1.1.0`）を入力して実行します。gh-pagesブランチの該当ディレクトリが削除されます。
-
-**2. config.ts のナビゲーションから削除する**
-
-残っている全ブランチの `config.ts` から該当バージョンのnav項目を削除してコミットします。
-
----
-
-## 操作まとめ
-
-| タイミング | 操作 | 自動/手動 |
-|---|---|---|
-| 初回導入 | ワークフローファイルをmainにプッシュ | 手動（1回のみ） |
-| 初回導入 | GitHub PagesのSource設定 | 手動（1回のみ） |
-| 初回導入 | `docs/index.html` をgh-pagesに追加 | 手動（1回のみ・任意） |
-| mdを更新 | 対象ブランチにプッシュ | **自動**（プッシュで発火） |
-| バージョン追加 | バージョンブランチを作成・プッシュ | **自動**（プッシュで発火） |
-| バージョン追加 | config.ts のnavに追記・両ブランチにコミット | 手動 |
-| バージョン削除 | Delete Docs Version ワークフローを実行 | 手動 |
-| バージョン削除 | config.ts のnavから削除・残ブランチにコミット | 手動 |
