@@ -11,11 +11,6 @@ on:
       - 'docs/**'
       - '.github/workflows/deploy-docs.yml'
   workflow_dispatch: # 手動トリガーを追加
-    inputs:
-      branch:
-        description: 'デプロイするブランチを指定してください'
-        required: true
-        default: 'main'
 
 jobs:
   deploy:
