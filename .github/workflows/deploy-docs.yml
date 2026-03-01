@@ -1,0 +1,52 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # v1.1.0 のようなバージョンブランチ
+    paths:
+      - 'docs/**'
+      - '.github/workflows/deploy-docs.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # ブランチ名をバージョンラベルとして使用
+      - name: Set version label
+        id: version
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          echo "label=${BRANCH}" >> $GITHUB_OUTPUT
+
+      # このブランチ分だけビルド
+      - name: Build VitePress
+        env:
+          DOCS_VERSION: ${{ steps.version.outputs.label }}
+        run: npm run docs:build
+        # ビルド結果は docs/.vitepress/dist に出力される
+
+      # gh-pagesブランチの既存コンテンツを保持しつつ、このバージョン分だけ上書き
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/.vitepress/dist
+          destination_dir: docs/${{ steps.version.outputs.label }}
+          keep_files: true   # ← 他バージョンのディレクトリを消さない重要オプション
