@@ -10,8 +10,8 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'main', link: '/docs/main/' },
-      { text: 'v1.1.0', link: '/docs/v1.1.0/' }
+      { text: 'main', link: 'https://kentaro-wada.github.io/vitepress-poc-202603/docs/main/' },
+      { text: 'v1.1.0', link: 'https://kentaro-wada.github.io/vitepress-poc-202603/docs/v1.1.0/' }
     ],
 
     sidebar: [
