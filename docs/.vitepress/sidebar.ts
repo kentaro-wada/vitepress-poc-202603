@@ -8,6 +8,8 @@ const DOCS_ROOT = path.resolve(__dirname, '..');
 // Officeファイルの拡張子リスト
 const OFFICE_EXTS = ['.xlsx', '.docx', '.pptx', '.xls', '.doc', '.ppt'];
 
+const OPENAPI_EXTS = ['.yaml', '.yml']
+
 // ファイルがOfficeファイルかどうかを判定する関数
 function isOfficeFile(name: string) {
   return OFFICE_EXTS.includes(path.extname(name).toLowerCase());
@@ -61,6 +63,11 @@ function buildItems(dir: string, urlBase: string): DefaultTheme.SidebarItem[] {
         text: `📎 ${entry.name}`, // ファイル名を表示
         link: `${urlPath}.link`, 
       });
+    } else if (OPENAPI_EXTS.includes(path.extname(entry.name).toLowerCase())) {
+        items.push({
+          text: `📄 ${entry.name.replace(/\.(yaml|yml)$/, '')}`,
+          link: `${urlPath}.api`,  // .api.md の .md を除いたパス
+        })
     }
   }
 

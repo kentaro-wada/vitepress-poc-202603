@@ -1,0 +1,343 @@
+openapi: 3.0.3
+info:
+  title: ユーザー管理API
+  description: ユーザーの取得・作成・更新・削除を行うAPIです。
+  version: 1.0.0
+
+servers:
+  - url: https://api.example.com/v1
+    description: 本番環境
+  - url: https://api-stg.example.com/v1
+    description: ステージング環境
+
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUserById
+      summary: ユーザー取得
+      description: 指定したIDのユーザー情報を取得します。
+      tags:
+        - Users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ユーザーID
+          schema:
+            type: string
+            example: "usr_abc123"
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "usr_abc123"
+                name: "山田 太郎"
+                email: "yamada@example.com"
+                role: "admin"
+                createdAt: "2024-01-15T09:00:00Z"
+        "404":
+          description: ユーザーが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "USER_NOT_FOUND"
+                message: "指定されたユーザーが存在しません"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      operationId: updateUser
+      summary: ユーザー更新
+      description: 指定したIDのユーザー情報を更新します。
+      tags:
+        - Users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ユーザーID
+          schema:
+            type: string
+            example: "usr_abc123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+            example:
+              name: "山田 次郎"
+              email: "yamada-jiro@example.com"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: リクエスト不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          description: ユーザーが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      operationId: deleteUser
+      summary: ユーザー削除
+      description: 指定したIDのユーザーを削除します。
+      tags:
+        - Users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ユーザーID
+          schema:
+            type: string
+            example: "usr_abc123"
+      responses:
+        "204":
+          description: 削除成功
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          description: ユーザーが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users:
+    get:
+      operationId: listUsers
+      summary: ユーザー一覧取得
+      description: ユーザーの一覧を取得します。ページネーションに対応しています。
+      tags:
+        - Users
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: ページ番号（1始まり）
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          required: false
+          description: 1ページあたりの件数
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+        - name: role
+          in: query
+          required: false
+          description: ロールでフィルタリング
+          schema:
+            type: string
+            enum: [admin, member, viewer]
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      operationId: createUser
+      summary: ユーザー作成
+      description: 新しいユーザーを作成します。
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            example:
+              name: "鈴木 花子"
+              email: "suzuki@example.com"
+              role: "member"
+      responses:
+        "201":
+          description: 作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: リクエスト不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: メールアドレスが既に使用されている
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: "EMAIL_ALREADY_EXISTS"
+                message: "このメールアドレスは既に登録されています"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - name
+        - email
+        - role
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: ユーザーID
+          example: "usr_abc123"
+        name:
+          type: string
+          description: 氏名
+          example: "山田 太郎"
+        email:
+          type: string
+          format: email
+          description: メールアドレス
+          example: "yamada@example.com"
+        role:
+          type: string
+          enum: [admin, member, viewer]
+          description: ロール
+          example: "admin"
+        createdAt:
+          type: string
+          format: date-time
+          description: 作成日時
+          example: "2024-01-15T09:00:00Z"
+
+    UserList:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - limit
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+          description: 総件数
+          example: 42
+        page:
+          type: integer
+          description: 現在のページ番号
+          example: 1
+        limit:
+          type: integer
+          description: 1ページあたりの件数
+          example: 20
+
+    CreateUserRequest:
+      type: object
+      required:
+        - name
+        - email
+        - role
+      properties:
+        name:
+          type: string
+          description: 氏名
+          example: "鈴木 花子"
+        email:
+          type: string
+          format: email
+          description: メールアドレス
+          example: "suzuki@example.com"
+        role:
+          type: string
+          enum: [admin, member, viewer]
+          description: ロール
+          example: "member"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: 氏名
+          example: "山田 次郎"
+        email:
+          type: string
+          format: email
+          description: メールアドレス
+          example: "yamada-jiro@example.com"
+        role:
+          type: string
+          enum: [admin, member, viewer]
+          description: ロール
+          example: "member"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: エラーコード
+          example: "USER_NOT_FOUND"
+        message:
+          type: string
+          description: エラーメッセージ
+          example: "指定されたユーザーが存在しません"
+
+  responses:
+    Unauthorized:
+      description: 認証エラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "UNAUTHORIZED"
+            message: "認証が必要です"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
