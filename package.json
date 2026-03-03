@@ -10,5 +10,6 @@
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
+    "@scalar/openapi-to-markdown": "^0.3.55"
   }
 }

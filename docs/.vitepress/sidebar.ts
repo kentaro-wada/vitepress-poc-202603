@@ -66,9 +66,9 @@ function buildItems(dir: string, urlBase: string): DefaultTheme.SidebarItem[] {
     } else if (OPENAPI_EXTS.includes(path.extname(entry.name).toLowerCase())) {
         items.push({
           text: `📄 ${entry.name.replace(/\.(yaml|yml)$/, '')}`,
-          link: `${urlPath}.api`,  // .api.md の .md を除いたパス
+          link: `${urlPath}.api`,  // .yaml.api.md → .yaml.api
         })
-    }
+      }
   }
 
   return items; // 構築したアイテムを返す

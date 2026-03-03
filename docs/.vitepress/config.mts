@@ -2,10 +2,13 @@ import { defineConfig } from 'vitepress'
 import { generateNav } from './nav'
 import { generateSidebar } from './sidebar'
 import { generateOfficePages, cleanupOfficePages } from './generate-office-pages'
+import { generateOpenApiPages, cleanupOpenApiPages } from './generate-openapi-pages'
+
 
 const version = process.env.DOCS_VERSION ?? 'main'
 
 const generatedFiles = process.env.NODE_ENV === 'production' ? generateOfficePages() : []; // ビルド時のみ一時ファイルを生成
+const generatedOpenApi = await generateOpenApiPages() 
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -89,5 +92,6 @@ export default defineConfig({
 
   buildEnd() {
     cleanupOfficePages(generatedFiles)
+    cleanupOpenApiPages(generatedOpenApi)
   },
 })

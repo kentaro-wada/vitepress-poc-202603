@@ -138,5 +138,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# Exclude generated .link.md files
+# Exclude generated .md files
 **/*.link.md
+**/*.api.md
+
