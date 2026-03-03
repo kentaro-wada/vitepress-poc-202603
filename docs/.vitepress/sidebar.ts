@@ -26,6 +26,9 @@ function buildItems(dir: string, urlBase: string): DefaultTheme.SidebarItem[] {
   for (const entry of entries) {
     // 隠しファイルをスキップ
     if (entry.name.startsWith('.')) continue;
+    // 自動生成された中継ファイルを除外
+    if (entry.name.endsWith('.link.md')) continue  // Officeの中継ファイル
+    if (entry.name.endsWith('.api.md')) continue   // OpenAPIの中継ファイル
 
     const fullPath = path.join(dir, entry.name); // エントリのフルパス
     const urlPath = `${urlBase}/${entry.name}`; // URLパス
@@ -39,11 +42,6 @@ function buildItems(dir: string, urlBase: string): DefaultTheme.SidebarItem[] {
         items: children, // 子アイテムを設定
       });
     } else if (entry.name.endsWith('.md')) {
-      // Markdownファイルの場合
-      if (entry.name.endsWith('.link.md')) {
-        // `.link.md`ファイルはスキップ
-        continue;
-      }
       if (entry.name === 'index.md') {
         // index.mdはトップページとして扱う
         items.unshift({
