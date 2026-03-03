@@ -29,7 +29,9 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm i
+        run: |
+          rm -f package-lock.json
+          npm i
 
       # ブランチ名をバージョンラベルとして使用
       - name: Set version label
